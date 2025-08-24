@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>{{ film.title }}</h1>
+    {% if unlocked %}
+      <video controls width="100%" src="{{ film.film_file.url }}"></video>
+    {% else %}
+      <p>This film is locked. Please purchase to watch.</p>
+    {% endif %}
+  </body>
+</html>
