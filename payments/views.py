@@ -1,21 +1,26 @@
 # payments/views.py
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from rest_framework.views import APIView
-import stripe, json
+import stripe, json, logging
+from django.http import JsonResponse
 
 from django.conf import settings
 from films.models import Film
-from .models import Order
+from .models import Order, PaymentTransaction
 from .utils import stk_push
 
+logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+def ping(request):
+    """A simple view to confirm the payments app is responsive."""
+    return JsonResponse({"status": "ok", "app": "payments"})
 
 class CreateStripeCheckoutSession(APIView):
     permission_classes = [IsAuthenticated]
@@ -83,13 +88,13 @@ def watch_film(request, film_id):
 
 # --- M-Pesa STK Push ---
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def initiate_payment(request):
     film_id = request.data.get("film_id")
     phone = request.data.get("phone")
 
     film = get_object_or_404(Film, id=film_id, status=Film.PAID)
 
-    # Create pending order
     order = Order.objects.create(
         user=request.user,
         film=film,
@@ -99,14 +104,19 @@ def initiate_payment(request):
         status=Order.PENDING,
     )
 
-    # Trigger STK push
     res = stk_push(phone, film.price, order_id=order.id)
 
-    # Attach transaction ID if available
     checkout_id = res.get("CheckoutRequestID")
     if checkout_id:
         order.payment_id = checkout_id
         order.save(update_fields=["payment_id"])
+
+        PaymentTransaction.objects.create(
+            phone_number=phone,
+            amount=film.price,
+            checkout_request_id=checkout_id,
+            status="PENDING"
+        )
 
     return Response(res)
 
@@ -114,19 +124,57 @@ def initiate_payment(request):
 @csrf_exempt
 @api_view(["POST"])
 def mpesa_callback(request):
+    logger.info("M-Pesa Callback: %s", json.dumps(request.data))
     data = request.data
     stk_callback = data.get("Body", {}).get("stkCallback", {})
     checkout_request_id = stk_callback.get("CheckoutRequestID")
     result_code = stk_callback.get("ResultCode")
+    result_desc = stk_callback.get("ResultDesc")
 
     try:
         order = Order.objects.get(payment_id=checkout_request_id)
+        payment_txn = PaymentTransaction.objects.filter(checkout_request_id=checkout_request_id).first()
+
         if result_code == 0:
+            metadata = stk_callback.get("CallbackMetadata", {}).get("Item", [])
+            receipt_number, amount, phone = None, None, None
+
+            for item in metadata:
+                if item["Name"] == "MpesaReceiptNumber":
+                    receipt_number = item["Value"]
+                elif item["Name"] == "Amount":
+                    amount = item["Value"]
+                elif item["Name"] == "PhoneNumber":
+                    phone = item["Value"]
+
             order.activate_access()
+            if payment_txn:
+                payment_txn.status = "SUCCESS"
+                payment_txn.receipt_number = receipt_number
+                payment_txn.amount = amount
+                payment_txn.phone_number = phone
+                payment_txn.result_desc = result_desc
+                payment_txn.save()
+
         else:
             order.status = Order.FAILED
             order.save(update_fields=["status"])
+            if payment_txn:
+                payment_txn.status = "FAILED"
+                payment_txn.result_desc = result_desc
+                payment_txn.save()
+
     except Order.DoesNotExist:
         pass
 
     return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
+
+
+class STKPushView(APIView):
+    def post(self, request):
+        phone = request.data.get("phone")
+        amount = request.data.get("amount")
+        resp = stk_push(phone, amount)
+        return Response(resp)
+def ping(request):
+    return JsonResponse({"status": "ok", "app": "payments"})

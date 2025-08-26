@@ -1,61 +1,62 @@
-# payments/models.py
+# films/models.py
 from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
-from films.models import Film
+from django.utils.text import slugify
 
 
-class Order(models.Model):
-    # --- Payment Methods ---
-    STRIPE = "stripe"
-    MPESA = "mpesa"
-    PAYMENT_METHOD_CHOICES = [
-        (STRIPE, "Stripe"),
-        (MPESA, "M-Pesa"),
-    ]
+class Category(models.Model):
+    """Optional categories for organizing films"""
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
 
-    # --- Status ---
-    PENDING = "pending"
-    SUCCESS = "success"
-    FAILED = "failed"
-    STATUS_CHOICES = [
-        (PENDING, "Pending"),
-        (SUCCESS, "Success"),
-        (FAILED, "Failed"),
-    ]
+    class Meta:
+        verbose_name_plural = "Categories"
+        ordering = ["name"]
 
-    # --- Core fields ---
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
-    film = models.ForeignKey(Film, on_delete=models.CASCADE, related_name="orders")
-    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
-    amount = models.DecimalField(max_digits=8, decimal_places=2)
-    currency = models.CharField(max_length=10, default="KES")
-
-    # --- Identifiers ---
-    payment_id = models.CharField(max_length=255, blank=True, null=True)  # Stripe session ID / M-Pesa checkout_request_id
-    transaction_id = models.CharField(max_length=100, blank=True, null=True)  # M-Pesa transaction ID
-    phone_number = models.CharField(max_length=15, blank=True, null=True)  # for M-Pesa tracking
-
-    # --- Status & Access ---
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    access_expires_at = models.DateTimeField(blank=True, null=True)
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Order {self.id} - {self.user.email} - {self.film.title} ({self.status})"
+        return self.name
 
-    def activate_access(self):
-        """Grant rental access when payment succeeds"""
-        self.status = self.SUCCESS
-        self.access_expires_at = timezone.now() + timedelta(days=self.film.rental_period_days)
-        self.save()
 
-    def has_access(self):
-        """Check if user can still watch the film"""
-        return (
-            self.status == self.SUCCESS and
-            self.access_expires_at and
-            self.access_expires_at > timezone.now()
-        )
+class Film(models.Model):
+    PROMO = "promo"
+    PAID = "paid"
+    STATUS_CHOICES = [
+        (PROMO, "Promo"),
+        (PAID, "Paid"),
+    ]
+
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=300, unique=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+
+    # Media
+    poster = models.ImageField(upload_to="films/posters/", blank=True, null=True)
+    trailer_url = models.URLField(blank=True, null=True)  # optional trailer
+    video_file = models.FileField(upload_to="films/videos/", blank=True, null=True)  # or S3 path
+
+    # Business logic
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    rental_period_days = models.PositiveIntegerField(default=2)  # default 2-day access
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PAID)
+
+    # Relationships
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="films")
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
