@@ -1,13 +1,25 @@
 from rest_framework import serializers
 from .models import Film, Category
 
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name", "slug"]
+        fields = [
+            "id",
+            "name",
+            "slug",
+        ]
+
 
 class FilmSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)  # show category details
+    category = CategorySerializer(read_only=True)  # nested category info
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source="category",
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = Film
@@ -16,13 +28,13 @@ class FilmSerializer(serializers.ModelSerializer):
             "title",
             "slug",
             "description",
+            "status",
+            "price",
             "poster",
             "trailer_url",
             "video_file",
-            "price",
-            "rental_period_days",
-            "status",
-            "category",
+            "category",       # nested read
+            "category_id",    # write-only, allows assigning by id
             "created_at",
             "updated_at",
         ]
