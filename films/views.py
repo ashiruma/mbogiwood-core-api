@@ -1,6 +1,19 @@
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView
 from .models import Film, Category
+from rest_framework import viewsets
+from .serializers import FilmSerializer, CategorySerializer
+
+class FilmViewSet(viewsets.ModelViewSet):
+    queryset = Film.objects.all().order_by("-created_at")
+    serializer_class = FilmSerializer
+    lookup_field = "slug"   # so you can use /api/films/<slug>/
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all().order_by("name")
+    serializer_class = CategorySerializer
+    lookup_field = "slug"
+
 
 def ping(request):
     return JsonResponse({"status": "ok", "app": "films"})
@@ -80,3 +93,4 @@ class FilmDetailView(DetailView):
             "updated_at": f.updated_at,
         }
         return JsonResponse(data, safe=False)
+        
