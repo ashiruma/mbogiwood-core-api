@@ -1,3 +1,4 @@
+# films/serializers.py
 from rest_framework import serializers
 from .models import Film, Category
 
@@ -5,36 +6,28 @@ from .models import Film, Category
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = [
-            "id",
-            "name",
-            "slug",
-        ]
+        fields = ["id", "name", "slug"]
 
 
 class FilmSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)  # nested category info
-    category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(),
-        source="category",
-        write_only=True,
-        required=False
-    )
+    # This will now use the serializer above to show category details
+    category = CategorySerializer(read_only=True)
+    
+    # We will rename trailer_url to match the frontend's expectation
+    trailer_link = serializers.URLField(source='trailer_url')
+    # We will rename poster to poster_image to match the frontend
+    poster_image = serializers.ImageField(source='poster', read_only=True)
 
     class Meta:
         model = Film
+        # These are the fields the frontend will receive
         fields = [
             "id",
             "title",
             "slug",
             "description",
-            "status",
-            "price",
-            "poster",
-            "trailer_url",
-            "video_file",
-            "category",       # nested read
-            "category_id",    # write-only, allows assigning by id
-            "created_at",
-            "updated_at",
+            "release_date", # Make sure to add this field to your view
+            "poster_image",
+            "trailer_link",
+            "category",
         ]
