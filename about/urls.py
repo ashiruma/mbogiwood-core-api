@@ -5,6 +5,5 @@ from .views import AboutPageView
 app_name = 'about'
 
 urlpatterns = [
-    # This now correctly creates the URL /api/about/
     path('', AboutPageView.as_view(), name='about-content'),
 ]
