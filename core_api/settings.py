@@ -20,7 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
     'rest_framework', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about'
+    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers'
 ]
 
 MIDDLEWARE = [
