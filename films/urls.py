@@ -1,10 +1,22 @@
-from rest_framework.routers import DefaultRouter
-from .views import FilmViewSet, CategoryViewSet
+# films/urls.py
+from django.urls import path
+from .views import (
+    film_list_api, 
+    film_detail_api, 
+    FilmUploadView,
+    FilmmakerFilmListView
+)
 
-router = DefaultRouter()
-router.register(r'films', FilmViewSet, basename="films")
-router.register(r'categories', CategoryViewSet, basename="categories")
+app_name = 'films'
 
-urlpatterns = router.urls
-
-app_name = "films"
+urlpatterns = [
+    # Most specific paths first
+    path('dashboard/my-films/', FilmmakerFilmListView.as_view(), name='filmmaker-film-list'),
+    path('upload/', FilmUploadView.as_view(), name='film-upload'),
+    
+    # General slug-based path
+    path('<slug:slug>/', film_detail_api, name='film-detail'),
+    
+    # Root path for the app, matched last
+    path('', film_list_api, name='film-list'),
+]

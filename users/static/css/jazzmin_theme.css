@@ -1,0 +1,17 @@
+/* users/static/css/jazzmin_theme.css */
+
+/* Change primary buttons and accents to Mbogiwood Yellow/Orange */
+.btn-primary, .accent-primary .nav-link.active, .page-item.active .page-link {
+    background-color: #F5A623 !important;
+    border-color: #F5A623 !important;
+    color: #111827 !important; /* Dark text for better contrast */
+}
+
+a, a:hover, .nav-pills .nav-link:not(.active):hover {
+    color: #F5A623;
+}
+
+/* Change sidebar color to Mbogiwood Brown */
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active, .sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {
+    background-color: #4A2E2A;
+}
