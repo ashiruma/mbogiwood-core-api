@@ -21,3 +21,5 @@ staticfiles/
 
 # VS Code
 .vscode/
+# Ignore user-uploaded media files
+/media/
