@@ -10,27 +10,15 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class FilmSerializer(serializers.ModelSerializer):
-    # This will use the serializer above to show category details
     category = CategorySerializer(read_only=True)
-    
-    # We rename `trailer_url` from the model to `trailer_link` to match the frontend
     trailer_link = serializers.URLField(source='trailer_url', read_only=True)
-    
-    # We rename `poster` from the model to `poster_image` and build the full URL
     poster_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Film
-        # These are the fields the frontend will receive
         fields = [
-            "id",
-            "title",
-            "slug",
-            "description",
-            "release_date",
-            "poster_image",
-            "trailer_link",
-            "category",
+            "id", "title", "slug", "description", "release_date",
+            "poster_image", "trailer_link", "category", "price"
         ]
 
     def get_poster_image(self, obj):
@@ -40,3 +28,12 @@ class FilmSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.poster.url)
             return obj.poster.url
         return None
+
+# --- SERIALIZER FOR THE UPLOAD VIEW ---
+class FilmUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Film
+        fields = [
+            'title', 'description', 'price', 'video_file', 
+            'poster', 'category', 'trailer_url', 'release_date'
+        ]
