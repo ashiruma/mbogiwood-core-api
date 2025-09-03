@@ -5,7 +5,7 @@ from .views import (
     film_detail_api,
     FilmUploadView,
     FilmmakerFilmListView,
-    dev_dashboard
+#    dev_dashboard
 )
 
 app_name = 'films'
@@ -15,5 +15,5 @@ urlpatterns = [
     path('upload/', FilmUploadView.as_view(), name='film-upload'),
     path('<slug:slug>/', film_detail_api, name='film-detail'),
     path('', film_list_api, name='film-list'),
-    path('dashboard/', dev_dashboard, name='dev_dashboard'),
+  #  path('dashboard/', dev_dashboard, name='dev_dashboard'),
 ]
