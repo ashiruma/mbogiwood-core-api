@@ -11,5 +11,5 @@ class ApplicationCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         # Prevent users from submitting more than one application
         if FilmmakerApplication.objects.filter(user=self.request.user).exists():
-            raise serializers.ValidationError("You have already submitted an application.")
+            raise serializers.ValidationError({"detail": "You have already submitted an application."})
         serializer.save(user=self.request.user)

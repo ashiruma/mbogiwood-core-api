@@ -1,9 +1,10 @@
 # analytics/urls.py
-
 from django.urls import path
-from . import views
+from .views import FilmmakerEarningsView
+
+app_name = 'analytics'
 
 urlpatterns = [
-    # You can add URL paths for your analytics app here later.
-    # This empty list is enough to fix the error for now.
+    # Creates the URL /api/analytics/earnings/
+    path('earnings/', FilmmakerEarningsView.as_view(), name='filmmaker-earnings'),
 ]

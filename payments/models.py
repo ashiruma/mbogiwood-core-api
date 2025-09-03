@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+from decimal import Decimal
 from films.models import Film
 
 
@@ -60,14 +61,26 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     access_expires_at = models.DateTimeField(blank=True, null=True)
 
+    # --- REVENUE TRACKING FIELDS (ADDED) ---
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    filmmaker_payout = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    # ----------------------------------------
+
     def __str__(self):
         return f"Order {self.id} - {self.user.email} - {self.film.title} ({self.status})"
 
+    # --- ACTIVATE ACCESS METHOD (UPDATED) ---
     def activate_access(self):
-        """Grant rental access when payment succeeds"""
+        """Calculates revenue split, grants rental access, and marks order as successful."""
+        # Calculate the 70/30 revenue split
+        self.platform_fee = self.amount * Decimal('0.30')
+        self.filmmaker_payout = self.amount * Decimal('0.70')
+        
+        # Set access period and status
         self.status = self.SUCCESS
         self.access_expires_at = timezone.now() + timedelta(days=self.film.rental_period_days)
         self.save()
+    # ----------------------------------------
 
     def has_access(self):
         """Check if user can still watch the film"""
