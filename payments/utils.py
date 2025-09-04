@@ -4,6 +4,38 @@ from django.conf import settings
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
 
+
+def mpesa_b2c_payout(phone_number, amount, remarks="Filmmaker Payout"):
+    """
+    Initiate an M-Pesa B2C Payout request.
+    Note: This requires B2C API credentials and permissions from Safaricom.
+    """
+    token = get_mpesa_token()
+    
+    payload = {
+        "OriginatorConversationID": "some_unique_id_here", # You'll need to generate a unique ID
+        "InitiatorName": settings.MPESA_B2C_INITIATOR_NAME,
+        "SecurityCredential": settings.MPESA_B2C_SECURITY_CREDENTIAL, # This is generated from your live cert
+        "CommandID": "BusinessPayment",
+        "Amount": str(int(amount)),
+        "PartyA": settings.MPESA_SHORTCODE,
+        "PartyB": str(phone_number),
+        "Remarks": remarks,
+        "QueueTimeOutURL": settings.MPESA_B2C_TIMEOUT_URL,
+        "ResultURL": settings.MPESA_B2C_RESULT_URL,
+        "Occassion": "Filmmaker Payment"
+    }
+
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    url = f"{settings.MPESA_BASE_URL}/mpesa/b2c/v1/paymentrequest"
+
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        return {"error": str(e)}
+    
 def get_mpesa_token():
     """Request OAuth token from Safaricom"""
     url = f"{settings.MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials"

@@ -34,7 +34,7 @@ class FilmAdmin(admin.ModelAdmin):
             'fields': ('title', 'slug', 'description', 'poster', 'category')
         }),
         ('Status & Pricing', {
-            'fields': ('status', 'price')
+            'fields': ('status', 'price_cents')
         }),
         ('Video Content', {
             'fields': ('trailer_url', 'video_file')
