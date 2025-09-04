@@ -1,16 +1,29 @@
 # users/serializers.py
-
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
+from djoser.serializers import UserSerializer as BaseUserSerializer
 from rest_framework import serializers
-from .models import CustomUser
+from django.contrib.auth import get_user_model
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password")
+User = get_user_model()
 
-    class Meta:
-        model = CustomUser
-        fields = ('full_name', 'email', 'password', 'password2')
+class UserSerializer(BaseUserSerializer):
+    """
+    Serializer for displaying a user's public information.
+    """
+class Meta(BaseUserSerializer.Meta):
+    model = User
+    fields = ['id', 'email', 'full_name', 'role']
 
+
+class UserCreateSerializer(BaseUserCreateSerializer):
+    """
+    Serializer for creating a new user. It uses Djoser's base
+    to handle password hashing and validation securely.
+    """
+class Meta(BaseUserCreateSerializer.Meta):
+    model = User
+    fields = ('id', 'email', 'full_name', 'password')
+   
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})

@@ -15,12 +15,13 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 # --- Apps ---
 INSTALLED_APPS = [
+    'daphne',
     'jazzmin',
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
     'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
-    'rest_framework', 'storages', 'corsheaders',
+    'rest_framework', 'channels', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers'
+    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews'
 ]
 
 MIDDLEWARE = [
@@ -73,9 +74,13 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
+    # --- CHANGE THIS BLOCK ---
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        # This temporarily allows anyone to access your API for easy development.
+        # We will change this back to IsAuthenticated before going live.
+        "rest_framework.permissions.AllowAny",
     ],
+    # -------------------------
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
@@ -118,3 +123,6 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar": "sidebar-dark-primary",
     "sidebar_nav_flat_style": True,
 }
+
+
+ASGI_APPLICATION = "core_api.asgi.application"

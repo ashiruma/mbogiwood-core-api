@@ -9,13 +9,20 @@ class AboutPageView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        # Assuming you only have one instance of the about page content
         content = AboutPageContent.objects.first()
         team_members = TeamMember.objects.all()
         
-        serializer = AboutPageSerializer({
+        # The serializer data now includes the new stat fields
+        serializer_data = {
             'mission_statement': content.mission_statement if content else '',
+            'vision_statement': content.vision_statement if content else '',
             'our_story': content.our_story if content else '',
-            'team_members': team_members
-        })
+            'our_values': content.our_values if content else '',
+            'team_members': team_members,
+            'films_featured': content.films_featured if content else 0,
+            'professionals_connected': content.professionals_connected if content else '0',
+            'countries_reached': content.countries_reached if content else 0,
+            'hours_watched': content.hours_watched if content else '0',
+        }
+        serializer = AboutPageSerializer(instance=serializer_data)
         return Response(serializer.data)

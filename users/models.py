@@ -49,6 +49,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(default=timezone.now)
 
     objects = CustomUserManager()
+    mpesa_payout_number = models.CharField(max_length=15, blank=True, null=True, help_text="The M-Pesa number for receiving payouts.")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]
