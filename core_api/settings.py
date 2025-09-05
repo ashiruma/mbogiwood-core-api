@@ -38,6 +38,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", # Your Next.js frontend
+    "http://127.0.0.1:3000",
+]
+
 
 # This line is required to allow POST requests (like registration) from your frontend
 CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
