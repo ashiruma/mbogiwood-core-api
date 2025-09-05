@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from .celery import app as celery_app
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
     'rest_framework', 'channels', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews'
+    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews', 'community'
 ]
 
 MIDDLEWARE = [
@@ -90,6 +91,12 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API powering the Mbogiwood K3 streaming platform",
     "VERSION": "1.0.0",
 }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+    },
+}
 
 # --- Stripe ---
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
@@ -126,3 +133,13 @@ JAZZMIN_UI_TWEAKS = {
 
 
 ASGI_APPLICATION = "core_api.asgi.application"
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Nairobi'
+
+# This makes sure the celery app is loaded when Django starts
+__all__ = ('celery_app',)
