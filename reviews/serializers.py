@@ -1,12 +1,20 @@
-# reviews/serializers.py
 from rest_framework import serializers
-from .models import Review
-from users.serializers import UserSerializer # Assuming you have a simple UserSerializer
+from .models import Review, Rating
+
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'rating', 'comment', 'created_at']
+        fields = ['id', 'film', 'user', 'rating', 'comment', 'created_at']
+        read_only_fields = ['user', 'created_at']
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Rating
+        fields = ['id', 'film', 'user', 'score', 'created_at']
         read_only_fields = ['user', 'created_at']

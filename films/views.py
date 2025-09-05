@@ -302,3 +302,113 @@ def dev_dashboard(request):
     A simple view for rendering a development or test dashboard.
     """
     return render(request, 'dashboard.html')
+
+# ===================================================================
+# --- 6. M-PESA PAYMENT ENDPOINT ---
+# ===================================================================
+import requests
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def initiate_mpesa_payment(request, slug):
+    """
+    Initiates an M-Pesa STK Push for the given film.
+    """
+    film = get_object_or_404(Film, slug=slug, status=Film.PAID)
+    user = request.user
+
+    # 1. Get access token
+    consumer_key = settings.MPESA_CONSUMER_KEY
+    consumer_secret = settings.MPESA_CONSUMER_SECRET
+    auth_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+
+    r = requests.get(auth_url, auth=(consumer_key, consumer_secret))
+    access_token = r.json().get("access_token")
+
+    # 2. Prepare STK push payload
+    from datetime import datetime
+    import base64
+
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    password_str = f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}"
+    password = base64.b64encode(password_str.encode()).decode("utf-8")
+
+    stk_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+
+    payload = {
+        "BusinessShortCode": settings.MPESA_SHORTCODE,
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(film.price),  # assuming price is in KES
+        "PartyA": user.phone_number,  # 🔑 store phone_number on your user model
+        "PartyB": settings.MPESA_SHORTCODE,
+        "PhoneNumber": user.phone_number,
+        "CallBackURL": settings.MPESA_CALLBACK_URL,
+        "AccountReference": str(film.id),
+        "TransactionDesc": f"Payment for {film.title}",
+    }
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    res = requests.post(stk_url, json=payload, headers=headers)
+
+    if res.status_code == 200:
+        # Record a pending order
+        order = Order.objects.create(
+            user=user,
+            film=film,
+            payment_method=Order.MPESA,
+            amount=film.price,
+            status=Order.PENDING,
+        )
+        return Response({"message": "STK Push initiated. Check your phone."})
+    else:
+        return Response(
+            {"error": res.json()}, status=res.status_code
+        )
+
+
+@csrf_exempt
+@require_POST
+def mpesa_callback(request):
+    """
+    Callback endpoint that Safaricom calls with payment status.
+    """
+    import json
+    body = json.loads(request.body.decode("utf-8"))
+    print("M-Pesa Callback:", body)  # Debugging
+
+    result_code = body["Body"]["stkCallback"]["ResultCode"]
+    metadata = body["Body"]["stkCallback"].get("CallbackMetadata", {})
+
+    if result_code == 0:  # success
+        mpesa_receipt = None
+        amount = None
+        phone = None
+
+        for item in metadata.get("Item", []):
+            if item["Name"] == "MpesaReceiptNumber":
+                mpesa_receipt = item["Value"]
+            elif item["Name"] == "Amount":
+                amount = item["Value"]
+            elif item["Name"] == "PhoneNumber":
+                phone = item["Value"]
+
+        # Update the relevant order
+        try:
+            order = Order.objects.filter(
+                user__phone_number=phone,
+                status=Order.PENDING
+            ).latest("created_at")
+
+            order.status = Order.SUCCESS
+            order.payment_id = mpesa_receipt
+            order.save()
+            order.activate_access()
+        except Order.DoesNotExist:
+            pass
+
+    return HttpResponse(status=200)
