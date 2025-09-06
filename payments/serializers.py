@@ -58,3 +58,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             "created_at",
             "completed_at",
         ]
+class PayoutRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PayoutRequest
+        fields = ['amount_cents', 'mpesa_phone_number']
