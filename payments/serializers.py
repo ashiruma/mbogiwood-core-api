@@ -1,13 +1,9 @@
-# payments/serializers.py
 from rest_framework import serializers
 from .models import Order, Payout, PaymentTransaction
-from films.serializers import FilmSerializer # Import from the films app
+from films.serializers import FilmSerializer
+
 
 class OrderSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Order model, showing purchase details.
-    """
-    # Use the detailed FilmSerializer to show nested film info
     film = FilmSerializer(read_only=True)
 
     class Meta:
@@ -15,24 +11,50 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "film",
+            "payment_method",
             "amount_cents",
+            "currency",
             "status",
+            "payment_id",
+            "transaction_id",
+            "phone_number",
             "created_at",
             "access_expires_at",
         ]
 
+
 class PayoutSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Payout model.
-    """
+    filmmaker_name = serializers.CharField(
+        source="filmmaker.get_full_name", read_only=True
+    )
+
     class Meta:
         model = Payout
-        fields = "__all__"
+        fields = [
+            "id",
+            "filmmaker",
+            "filmmaker_name",
+            "amount_cents",
+            "status",
+            "transaction_id",
+            "created_at",
+            "completed_at",
+        ]
+
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the PaymentTransaction model (M-Pesa logs).
-    """
     class Meta:
         model = PaymentTransaction
-        fields = "__all__"
+        fields = [
+            "id",
+            "checkout_request_id",
+            "merchant_request_id",
+            "result_code",
+            "result_desc",
+            "amount_cents",
+            "mpesa_receipt",
+            "phone_number",
+            "status",
+            "created_at",
+            "completed_at",
+        ]

@@ -2,44 +2,26 @@
 from django.contrib import admin
 from .models import Film, Category
 
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    """
-    Configuration for the Category model in the admin panel.
-    """
-    list_display = ('name', 'slug')
-    search_fields = ('name',)
-    prepopulated_fields = {'slug': ('name',)} # Automatically creates a slug from the name
+    list_display = ("name", "slug")
+    search_fields = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
+
 
 @admin.register(Film)
 class FilmAdmin(admin.ModelAdmin):
-    """
-    Configuration for the Film model in the admin panel.
-    """
-    # 1. Customize the columns shown in the list of films
-    list_display = ('id', 'title', 'status', 'category', 'created_at')
-    
-    # 2. Add a filter sidebar
-    list_filter = ('status', 'category')
-    
-    # 3. Add a search bar
-    search_fields = ('title', 'description')
-    
-    # Automatically create the slug from the title
-    prepopulated_fields = {'slug': ('title',)}
-    
-    # Organize the fields in the add/edit form
-    fieldsets = (
-        (None, {
-            'fields': ('title', 'slug', 'description', 'poster', 'category')
-        }),
-        ('Status & Pricing', {
-            'fields': ('status', 'price_cents')
-        }),
-        ('Video Content', {
-            'fields': ('trailer_url', 'video_file')
-        }),
+    list_display = (
+        "title",
+        "category",
+        "status",
+        "price",
+        "rental_period_days",
+        "processing_status",
+        "created_at",
     )
-    
-    # Show read-only date fields
-    readonly_fields = ('created_at', 'updated_at')
+    list_filter = ("status", "processing_status", "category")
+    search_fields = ("title", "description")
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at")
