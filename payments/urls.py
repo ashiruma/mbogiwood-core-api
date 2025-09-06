@@ -27,4 +27,6 @@ urlpatterns = [
 
     # --- Payouts ---
     path("payout/create/", create_payout, name="create-payout"),
+    path('payouts/request/', PayoutRequestCreateView.as_view(), name='payout-request-create'),
+]
 ]
