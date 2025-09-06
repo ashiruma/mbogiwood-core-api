@@ -18,6 +18,18 @@ from .utils import stk_push  # helper for Daraja / STK push
 logger = logging.getLogger(__name__)
 stripe.api_key = getattr(settings, "STRIPE_SECRET_KEY", None)
 
+class PayoutRequestCreateView(generics.CreateAPIView):
+    """
+    Allows an authenticated filmmaker to create a new payout request.
+    """
+    queryset = PayoutRequest.objects.all()
+    serializer_class = PayoutRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Associate the request with the logged-in filmmaker
+        serializer.save(filmmaker=self.request.user)
+
 
 # -------------------------
 # Healthcheck
