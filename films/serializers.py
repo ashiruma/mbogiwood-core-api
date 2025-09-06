@@ -2,25 +2,17 @@
 from rest_framework import serializers
 from .models import Film, Category
 
-# ===================================================================
-# --- Reusable Model Serializers ---
-# ===================================================================
 
 class CategorySerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Category model, for nested display within films.
-    """
     class Meta:
         model = Category
         fields = ["id", "name", "slug"]
 
+
 class FilmSerializer(serializers.ModelSerializer):
-    """
-    The main serializer for displaying Film details to the public.
-    """
     category = CategorySerializer(read_only=True)
     poster_url = serializers.SerializerMethodField()
-    filmmaker_name = serializers.CharField(source='filmmaker.get_full_name', read_only=True, default='Mbogiwood Productions')
+    filmmaker_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Film
@@ -33,30 +25,25 @@ class FilmSerializer(serializers.ModelSerializer):
             "poster_url",
             "trailer_url",
             "category",
-            "price_cents", # Standardized to use cents
+            "price_kes",   # ✅ use price_kes (consistent with payments app)
             "filmmaker_name",
         ]
 
     def get_poster_url(self, obj):
-        """
-        Returns the absolute URL for the poster image.
-        """
-        request = self.context.get('request')
-        if obj.poster and hasattr(obj.poster, 'url'):
-            if request is not None:
-                return request.build_absolute_uri(obj.poster.url)
-            return obj.poster.url
+        request = self.context.get("request")
+        if obj.poster and hasattr(obj.poster, "url"):
+            return request.build_absolute_uri(obj.poster.url) if request else obj.poster.url
         return None
 
-# ===================================================================
-# --- Serializers for Specific Actions ---
-# ===================================================================
+    def get_filmmaker_name(self, obj):
+        if hasattr(obj.filmmaker, "get_full_name") and obj.filmmaker.get_full_name():
+            return obj.filmmaker.get_full_name()
+        if hasattr(obj.filmmaker, "username"):
+            return obj.filmmaker.username
+        return "Mbogiwood Productions"
+
 
 class FilmUploadSerializer(serializers.ModelSerializer):
-    """
-    Serializer used specifically for validating and creating new film uploads.
-    """
-    # For write operations, sending just the ID of the category is more efficient.
     category = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         required=False,
@@ -66,20 +53,18 @@ class FilmUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Film
         fields = [
-            'title',
-            'description',
-            'release_date',
-            'poster',
-            'trailer_url',
-            'video_file',
-            'category',
-            'price_cents', # Standardized to use cents
+            "title",
+            "description",
+            "release_date",
+            "poster",
+            "trailer_url",
+            "video_file",
+            "category",
+            "price_kes",   # ✅ use price_kes
         ]
 
+
 class RevenueSummarySerializer(serializers.Serializer):
-    """
-    A non-model serializer for structuring the filmmaker's revenue data.
-    """
     total_cents = serializers.IntegerField()
     pending_cents = serializers.IntegerField()
     per_film = serializers.ListField(child=serializers.DictField())
