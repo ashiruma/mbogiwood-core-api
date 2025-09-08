@@ -106,11 +106,12 @@ def watch_film(request, slug):
     return render(request, "films/watch.html", {"film": film, "unlocked": unlocked})
 
 
-class SecureFilmStreamView(views.APIView):
+class SecureFilmStreamView(views.views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         film = get_object_or_404(Film, pk=pk)
+        is_owner = film.filmmaker == request.user
         is_owner = film.filmmaker == request.user
 
         has_access = Order.objects.filter(
@@ -122,6 +123,15 @@ class SecureFilmStreamView(views.APIView):
 
         if not has_access and not is_owner:
             return Response({"error": "You do not have permission to stream this film."}, status=status.HTTP_403_FORBIDDEN)
+        if not has_access and not is_owner:
+            return Response({"error": "You do not have permission to stream this film."}, status=status.HTTP_403_FORBIDDEN)
+
+        if film.processing_status != Film.ProcessingStatus.SUCCESS or not film.hls_manifest_path:
+            return Response({"error": "This film is not yet available for streaming."}, status=status.HTTP_404_NOT_FOUND)
+        
+        hls_full_url = request.build_absolute_uri(f'/media/{film.hls_manifest_path}')
+        
+        return Response({'hls_url': hls_full_url})
 
         if film.processing_status != Film.ProcessingStatus.SUCCESS or not film.hls_manifest_path:
             return Response({"error": "This film is not yet available for streaming."}, status=status.HTTP_404_NOT_FOUND)
