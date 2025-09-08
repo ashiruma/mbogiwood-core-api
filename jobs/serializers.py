@@ -7,5 +7,5 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = [
             'id', 'title', 'slug', 'company', 
-            'location', 'description', 'job_type', 'posted_at'
+            'location', 'description', 'job_type', 'created_at'
         ]

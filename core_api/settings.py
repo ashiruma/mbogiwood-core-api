@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
     'rest_framework', 'channels', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews', 'community'
+    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews', 'community', 'coproduction', 'news'
 ]
 
 MIDDLEWARE = [
@@ -148,3 +148,12 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 
 # This makes sure the celery app is loaded when Django starts
 __all__ = ('celery_app',)
+
+# --- EMAIL SETTINGS ---
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your Gmail address
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') # Your Gmail App Password

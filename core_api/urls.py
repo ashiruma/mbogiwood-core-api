@@ -21,6 +21,8 @@ urlpatterns = [
     path("api/community/", include("community.urls")),   # new community app
     path("api/reviews/", include("reviews.urls")),       # reviews app
     path("api/jobs/", include("jobs.urls")),             # jobs app
+    path("api/coproduction/", include("coproduction.urls")),
+    path("api/news/", include("news.urls")),
 ]
 
 # Media files in development
