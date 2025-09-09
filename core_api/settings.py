@@ -20,7 +20,9 @@ if not ALLOWED_HOSTS:
     if DEBUG:
         ALLOWED_HOSTS = ["*"]  # dev mode: allow everything
     else:
-        ALLOWED_HOSTS = ["localhost", "127.0.0.1"]  # minimal safe prod default
+        ALLOWED_HOSTS = ["localhost",
+    "127.0.0.1",
+    "mbogiwood-core-api.onrender.com",]  # minimal safe prod default
 
 
 # Keep existing AUTH_USER_MODEL

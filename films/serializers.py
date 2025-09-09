@@ -25,7 +25,7 @@ class FilmSerializer(serializers.ModelSerializer):
             "poster_url",
             "trailer_url",
             "category",
-            "price_kes",   # ✅ use price_kes (consistent with payments app)
+            "price_kes",
             "filmmaker_name",
         ]
 
@@ -43,12 +43,15 @@ class FilmSerializer(serializers.ModelSerializer):
         return "Mbogiwood Productions"
 
 
+# --- THIS IS THE UPDATED SECTION ---
 class FilmUploadSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         required=False,
         allow_null=True
     )
+    # We now expect the S3 key (a string) from the frontend, not the file itself.
+    video_s3_key = serializers.CharField(write_only=True)
 
     class Meta:
         model = Film
@@ -58,10 +61,15 @@ class FilmUploadSerializer(serializers.ModelSerializer):
             "release_date",
             "poster",
             "trailer_url",
-            "video_file",
+            "video_s3_key", # Changed from 'video_file'
             "category",
-            "price_kes",   # ✅ use price_kes
+            "price_kes",
         ]
+    
+    def create(self, validated_data):
+        # The 'filmmaker' is added automatically in the view.
+        # This will now correctly save the s3 key to your Film model.
+        return Film.objects.create(**validated_data)
 
 
 class RevenueSummarySerializer(serializers.Serializer):

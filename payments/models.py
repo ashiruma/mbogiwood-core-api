@@ -105,12 +105,19 @@ class PaymentTransaction(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
+    
+    # ✅ FIX: The ForeignKey definition below was broken and has been corrected.
     order = models.ForeignKey(
-        "Order", on_delete=models.CASCADE, related_name="transactions"
+        "Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transactions'
     )
 
     def __str__(self):
         return f"Txn {self.checkout_request_id} | {self.phone_number} | {self.status}"
+
 class PayoutRequest(models.Model):
     """
     Represents a request from a filmmaker to withdraw their earnings.
