@@ -106,7 +106,7 @@ def watch_film(request, slug):
     return render(request, "films/watch.html", {"film": film, "unlocked": unlocked})
 
 
-class SecureFilmStreamView(views.views.APIView):
+class SecureFilmStreamView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):

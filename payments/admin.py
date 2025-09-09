@@ -1,103 +1,144 @@
 # payments/admin.py
 from django.contrib import admin
-from .models import Order, PaymentTransaction, Payout
+from .models import Order, Payout, PaymentTransaction, PayoutRequest
 
+
+# ------------------------
+# Inline Models
+# ------------------------
+class PaymentTransactionInline(admin.TabularInline):
+    model = PaymentTransaction
+    extra = 0
+    readonly_fields = (
+        "checkout_request_id",
+        "merchant_request_id",
+        "result_code",
+        "result_desc",
+        "amount_cents",
+        "mpesa_receipt",
+        "phone_number",
+        "status",
+        "created_at",
+        "completed_at",
+    )
+    can_delete = False
+
+
+# ------------------------
+# Order Admin
+# ------------------------
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
         "film",
+        "payment_method",
+        "amount_cents",
+        "currency",
         "status",
-        "display_amount", # Use the custom method here
+        "transaction_id",
         "created_at",
+        "access_expires_at",
     )
-    list_filter = ("payment_method", "status", "created_at")
-    search_fields = ("user__email", "film__title", "payment_id")
+    list_filter = ("status", "payment_method", "currency", "created_at")
+    search_fields = ("user__username", "user__email", "film__title", "transaction_id", "payment_id")
+    ordering = ("-created_at",)
     readonly_fields = (
         "created_at",
         "updated_at",
-        "access_expires_at",
+        "payment_id",
+        "transaction_id",
         "platform_fee_cents",
         "filmmaker_payout_cents",
+        "access_expires_at",
     )
-    ordering = ("-created_at",)
-
-    fieldsets = (
-        ("Order Info", {
-            "fields": ("user", "film", "payment_method", "amount_cents", "currency")
-        }),
-        ("Revenue Split", {
-            "fields": ("platform_fee_cents", "filmmaker_payout_cents")
-        }),
-        ("Identifiers", {
-            "fields": ("payment_id", "transaction_id", "phone_number")
-        }),
-        ("Status & Access", {
-            "fields": ("status", "access_expires_at")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-        }),
-    )
-
-    @admin.display(description='Amount (KES)')
-    def display_amount(self, obj):
-        """Formats the cents value into a readable KES string."""
-        return f"{obj.amount_cents / 100:.2f}"
+    inlines = [PaymentTransactionInline]
 
 
+# ------------------------
+# PaymentTransaction Admin
+# ------------------------
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
     list_display = (
-        "id",
-        "phone_number",
-        "display_amount", # Use the custom method here
-        "status",
         "checkout_request_id",
+        "phone_number",
+        "amount_cents",
+        "status",
+        "mpesa_receipt",
+        "result_code",
         "created_at",
     )
     list_filter = ("status", "created_at")
-    search_fields = ("phone_number", "checkout_request_id", "mpesa_receipt")
-    readonly_fields = ("created_at", "completed_at")
+    search_fields = ("checkout_request_id", "mpesa_receipt", "phone_number")
     ordering = ("-created_at",)
-
-    fieldsets = (
-        ("Transaction Info", {
-            "fields": ("checkout_request_id", "merchant_request_id", "mpesa_receipt")
-        }),
-        ("Payment Data", {
-            "fields": ("amount_cents", "phone_number", "status", "result_code", "result_desc")
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "completed_at"),
-        }),
+    readonly_fields = (
+        "checkout_request_id",
+        "merchant_request_id",
+        "result_code",
+        "result_desc",
+        "amount_cents",
+        "mpesa_receipt",
+        "phone_number",
+        "status",
+        "created_at",
+        "completed_at",
     )
 
-    @admin.display(description='Amount (KES)')
-    def display_amount(self, obj):
-        """Formats the cents value into a readable KES string."""
-        if obj.amount_cents is not None:
-            return f"{obj.amount_cents / 100:.2f}"
-        return "N/A"
 
-
+# ------------------------
+# Payout Admin (Extended for B2C Callbacks)
+# ------------------------
 @admin.register(Payout)
 class PayoutAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "filmmaker",
+        "amount_cents",
         "status",
-        "display_amount", # Use the custom method here
+        "transaction_id",
         "created_at",
-        "transaction_id"
+        "completed_at",
     )
-    list_filter = ("status",)
-    search_fields = ("filmmaker__email", "transaction_id")
+    list_filter = ("status", "created_at")
+    search_fields = ("filmmaker__username", "filmmaker__email", "transaction_id")
     readonly_fields = ("created_at", "completed_at")
-    ordering = ("-created_at",)
 
-    @admin.display(description='Amount (KES)')
-    def display_amount(self, obj):
-        """Formats the cents value into a readable KES string."""
-        return f"{obj.amount_cents / 100:.2f}"
+    fieldsets = (
+        ("Payout Info", {
+            "fields": ("filmmaker", "amount_cents", "status", "transaction_id")
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "completed_at")
+        }),
+        ("M-Pesa B2C Callback", {
+            "fields": (
+                "result_code",
+                "result_desc",
+                "mpesa_receipt",
+                "b2c_utility_account",
+                "b2c_working_account",
+                "b2c_charges_paid_account",
+            ),
+        }),
+    )
+
+
+# ------------------------
+# PayoutRequest Admin
+# ------------------------
+@admin.register(PayoutRequest)
+class PayoutRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "filmmaker",
+        "amount_cents",
+        "mpesa_phone_number",
+        "status",
+        "requested_at",
+        "reviewed_at",
+    )
+    list_filter = ("status", "requested_at")
+    search_fields = ("filmmaker__username", "filmmaker__email", "mpesa_phone_number")
+    readonly_fields = ("requested_at",)

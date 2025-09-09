@@ -12,6 +12,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
+# Keep existing AUTH_USER_MODEL (we will create users.CustomUser)
 AUTH_USER_MODEL = "users.CustomUser"
 
 # --- Apps ---
@@ -20,14 +21,23 @@ INSTALLED_APPS = [
     'jazzmin',
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
     'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
-    'rest_framework', 'channels', 'storages', 'corsheaders',
+
+    # Third-party apps
+    'rest_framework', 
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',  # added for JWT support
+    'rest_framework_simplejwt.token_blacklist',  # optional, for refresh token blacklisting
+    'channels', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about', 'filmmakers', 'reviews', 'community', 'coproduction', 'news'
+
+    # Local apps
+    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about',
+    'filmmakers', 'reviews', 'community', 'coproduction', 'news'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # moved early per django-cors-headers recommendation
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -37,56 +47,96 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+# --- CORS / CSRF ---
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000", # Your Next.js frontend
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
-]
+] + [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
-
-# This line is required to allow POST requests (like registration) from your frontend
-CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+] + [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 ROOT_URLCONF = 'core_api.urls'
-TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates','DIRS': [BASE_DIR / "templates"],'APP_DIRS': True,'OPTIONS': {'context_processors': ['django.template.context_processors.debug','django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages',]},}]
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / "templates"],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    }
+]
+
 WSGI_APPLICATION = 'core_api.wsgi.application'
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
-AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},{'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},{'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},]
+ASGI_APPLICATION = "core_api.asgi.application"
+
+# --- Database ---
+DATABASES = {
+    'default': {
+        'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+        'NAME': os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+        'USER': os.getenv("DB_USER", ""),
+        'PASSWORD': os.getenv("DB_PASSWORD", ""),
+        'HOST': os.getenv("DB_HOST", ""),
+        'PORT': os.getenv("DB_PORT", ""),
+    }
+}
+
+# --- Auth ---
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Static and Media Files ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- AWS S3 ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com' if AWS_STORAGE_BUCKET_NAME else None
 AWS_QUERYSTRING_AUTH = False
+
 STATICFILES_STORAGE = "core_api.storages.StaticStorage"
 DEFAULT_FILE_STORAGE = "core_api.storages.MediaStorage"
 
 # --- DRF ---
+# Keep your existing defaults but add JWT auth so frontend can use tokens.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # JWT first for API token auth
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # keep session/basic to retain admin and backward compatibility
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
-    # --- CHANGE THIS BLOCK ---
     "DEFAULT_PERMISSION_CLASSES": [
-        # This temporarily allows anyone to access your API for easy development.
-        # We will change this back to IsAuthenticated before going live.
+        # Keep AllowAny during development; switch to IsAuthenticated in production for most endpoints
         "rest_framework.permissions.AllowAny",
     ],
-    # -------------------------
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
@@ -96,10 +146,24 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API powering the Mbogiwood K3 streaming platform",
     "VERSION": "1.0.0",
 }
+
+# --- Simple JWT settings (added) ---
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "30"))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    # Optional: set SIGNING_KEY from env (falls back to SECRET_KEY)
+    "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
+}
+
+# --- Channels / Redis ---
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+        "CONFIG": {"hosts": [(os.getenv("REDIS_HOST", "127.0.0.1"), int(os.getenv("REDIS_PORT", 6379)))]},
     },
 }
 
@@ -116,13 +180,13 @@ MPESA_SHORTCODE = os.getenv("MPESA_SHORTCODE")
 MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
 MPESA_CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL")
 
-# --- JAZZMIN SETTINGS ---
+# --- Jazzmin ---
 JAZZMIN_SETTINGS = {
     "site_title": "Mbogiwood Admin",
     "site_header": "Mbogiwood Productions",
     "site_brand": "Mbogiwood",
     "welcome_sign": "Welcome to the Mbogiwood Productions Admin Panel",
-    "copyright": "Mbogiwood Ltd",
+    "copyright": "Mbogiwood Productions PLC",
     "custom_css": "css/jazzmin_theme.css"
 }
 
@@ -136,24 +200,28 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar_nav_flat_style": True,
 }
 
-
-ASGI_APPLICATION = "core_api.asgi.application"
-# CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# --- Celery ---
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Nairobi'
 
-# This makes sure the celery app is loaded when Django starts
 __all__ = ('celery_app',)
 
-# --- EMAIL SETTINGS ---
-
+# --- Email ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your Gmail address
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') # Your Gmail App Password
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+# --- Additional security suggestions (non-breaking, informative) ---
+# - Ensure DEBUG=False in production
+# - Set DJANGO_SECRET_KEY in environment
+# - Configure ALLOWED_HOSTS with your domains
+# - Use a secure Redis and RDS/Postgres setup for production
+
+# End of settings

@@ -3,8 +3,7 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 
-# ✅ import community routing properly
-import community.routing
+import community.routing  # WebSocket routes from community app
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core_api.settings")
 

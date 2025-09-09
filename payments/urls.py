@@ -3,11 +3,13 @@ from django.urls import path
 from .views import (
     initiate_mpesa_payment,
     mpesa_callback,
-    create_stripe_checkout_session,  # ✅ fixed
+    create_stripe_checkout_session,
     payment_success,
     payment_cancel,
     film_access_api,
     create_payout,
+    PayoutRequestCreateView,
+    PayoutRequestListView,  # ✅ added
 )
 
 app_name = "payments"
@@ -27,6 +29,9 @@ urlpatterns = [
 
     # --- Payouts ---
     path("payout/create/", create_payout, name="create-payout"),
-    path('payouts/request/', PayoutRequestCreateView.as_view(), name='payout-request-create'),
-]
+    path("payouts/request/", PayoutRequestCreateView.as_view(), name="payout-request-create"),
+    path("payouts/my-requests/", PayoutRequestListView.as_view(), name="payout-request-list"),  # ✅ added
+    path("mpesa/b2c/result/", mpesa_b2c_result, name="mpesa-b2c-result"),
+    path("mpesa/b2c/timeout/", mpesa_b2c_timeout, name="mpesa-b2c-timeout"),
+
 ]
