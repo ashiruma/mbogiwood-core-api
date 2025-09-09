@@ -105,6 +105,9 @@ class PaymentTransaction(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(blank=True, null=True)
+    order = models.ForeignKey(
+        "Order", on_delete=models.CASCADE, related_name="transactions"
+    )
 
     def __str__(self):
         return f"Txn {self.checkout_request_id} | {self.phone_number} | {self.status}"

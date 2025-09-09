@@ -9,10 +9,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security & Core ---
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret")
-DEBUG = os.getenv("DEBUG", "True") == "True"
-ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-# Keep existing AUTH_USER_MODEL (we will create users.CustomUser)
+# Safe fallback for ALLOWED_HOSTS
+raw_hosts = os.getenv("ALLOWED_HOSTS", "")
+ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
+
+# If nothing is set, default safely
+if not ALLOWED_HOSTS:
+    if DEBUG:
+        ALLOWED_HOSTS = ["*"]  # dev mode: allow everything
+    else:
+        ALLOWED_HOSTS = ["localhost", "127.0.0.1"]  # minimal safe prod default
+
+
+# Keep existing AUTH_USER_MODEL
 AUTH_USER_MODEL = "users.CustomUser"
 
 # --- Apps ---
@@ -25,8 +36,8 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework', 
     'rest_framework.authtoken',
-    'rest_framework_simplejwt',  # added for JWT support
-    'rest_framework_simplejwt.token_blacklist',  # optional, for refresh token blacklisting
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'channels', 'storages', 'corsheaders',
     'drf_spectacular', 'drf_spectacular_sidecar',
 
@@ -37,7 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # moved early per django-cors-headers recommendation
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -124,17 +135,13 @@ STATICFILES_STORAGE = "core_api.storages.StaticStorage"
 DEFAULT_FILE_STORAGE = "core_api.storages.MediaStorage"
 
 # --- DRF ---
-# Keep your existing defaults but add JWT auth so frontend can use tokens.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # JWT first for API token auth
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        # keep session/basic to retain admin and backward compatibility
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        # Keep AllowAny during development; switch to IsAuthenticated in production for most endpoints
         "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -147,7 +154,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-# --- Simple JWT settings (added) ---
+# --- Simple JWT settings ---
 from datetime import timedelta
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "30"))),
@@ -155,7 +162,6 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
-    # Optional: set SIGNING_KEY from env (falls back to SECRET_KEY)
     "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
 }
 
@@ -218,10 +224,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
-# --- Additional security suggestions (non-breaking, informative) ---
+# --- Security Notes ---
 # - Ensure DEBUG=False in production
 # - Set DJANGO_SECRET_KEY in environment
 # - Configure ALLOWED_HOSTS with your domains
-# - Use a secure Redis and RDS/Postgres setup for production
-
-# End of settings
+# - Use secure Redis/Postgres in production

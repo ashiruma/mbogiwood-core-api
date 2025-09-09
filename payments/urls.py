@@ -8,6 +8,8 @@ from .views import (
     payment_cancel,
     film_access_api,
     create_payout,
+    mpesa_b2c_result,
+    mpesa_b2c_timeout,
     PayoutRequestCreateView,
     PayoutRequestListView,  # ✅ added
 )
