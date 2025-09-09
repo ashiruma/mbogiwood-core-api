@@ -64,11 +64,15 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://mbogiwood.vercel.app",
+
 ] + [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://mbogiwood.vercel.app"
+
 ] + [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 ROOT_URLCONF = 'core_api.urls'
