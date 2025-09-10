@@ -1,65 +1,61 @@
 from pathlib import Path
 import os
-import dj_database_url # Add this import
+from datetime import timedelta
+import dj_database_url
 from dotenv import load_dotenv
 from .celery import app as celery_app
-import dj_database_url # Add this import
 
+# Load environment variables
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- Security & Core ---
+# --- Security ---
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-# Safe fallback for ALLOWED_HOSTS
 raw_hosts = os.getenv("ALLOWED_HOSTS", "")
 ALLOWED_HOSTS = [h.strip() for h in raw_hosts.split(",") if h.strip()]
 
-# If nothing is set, default safely
 if not ALLOWED_HOSTS:
-    if DEBUG:
-        ALLOWED_HOSTS = ["*"]  # dev mode: allow everything
-    else:
-        ALLOWED_HOSTS = ["localhost",
-    "127.0.0.1",
-    "mbogiwood-core-api.onrender.com",]  # minimal safe prod default
+    ALLOWED_HOSTS = ["*"] if DEBUG else ["localhost", "127.0.0.1", "mbogiwood-core-api.onrender.com"]
 
-
-# Keep existing AUTH_USER_MODEL
+# Custom User
 AUTH_USER_MODEL = "users.CustomUser"
 
 # --- Apps ---
 INSTALLED_APPS = [
-    'daphne',
-    'jazzmin',
-    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
-    'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
+    "daphne",
+    "jazzmin",
+    "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
+    "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
 
-    # Third-party apps
-    'rest_framework', 
-    'rest_framework.authtoken',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'channels', 'storages', 'corsheaders',
-    'drf_spectacular', 'drf_spectacular_sidecar',
+    # Third-party
+    "rest_framework", 
+    "rest_framework.authtoken",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "channels",
+    "storages",
+    "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 
     # Local apps
-    'users', 'films', 'payments', 'analytics', 'jobs', 'gallery', 'about',
-    'filmmakers', 'reviews', 'community', 'coproduction', 'news'
+    "users", "films", "payments", "analytics", "jobs", "gallery",
+    "about", "filmmakers", "reviews", "community", "coproduction", "news",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 # --- CORS / CSRF ---
@@ -67,78 +63,78 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://mbogiwood.vercel.app",
-
 ] + [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://mbogiwood.vercel.app"
-
+    "https://mbogiwood.vercel.app",
 ] + [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
-ROOT_URLCONF = 'core_api.urls'
+# --- URLs & Templates ---
+ROOT_URLCONF = "core_api.urls"
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     }
 ]
 
-WSGI_APPLICATION = 'core_api.wsgi.application'
+WSGI_APPLICATION = "core_api.wsgi.application"
 ASGI_APPLICATION = "core_api.asgi.application"
 
 # --- Database ---
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv("DATABASE_URL", "sqlite:///db.sqlite3"),
-        conn_max_age=600
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/db.sqlite3"),
+        conn_max_age=600,
     )
 }
 
-# --- Auth ---
+# --- Authentication ---
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# --- Internationalization ---
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 USE_TZ = True
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Static and Media Files ---
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# --- Static & Media ---
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-MEDIA_URL  = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 # --- AWS S3 ---
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com' if AWS_STORAGE_BUCKET_NAME else None
+AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com" if AWS_STORAGE_BUCKET_NAME else None
 AWS_QUERYSTRING_AUTH = False
 
 STATICFILES_STORAGE = "core_api.storages.StaticStorage"
 DEFAULT_FILE_STORAGE = "core_api.storages.MediaStorage"
 
-# --- DRF ---
+# --- Django REST Framework ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -158,8 +154,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-# --- Simple JWT settings ---
-from datetime import timedelta
+# --- JWT ---
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "30"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
@@ -168,7 +163,26 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "SIGNING_KEY": os.getenv("JWT_SIGNING_KEY", SECRET_KEY),
 }
+# --- Djoser ---
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SEND_ACTIVATION_EMAIL': True,
+    'USER_ID_FIELD': 'id',
+    
+    # These URLs are the paths on your FRONTEND application
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset/{uid}/{token}',
 
+    'SERIALIZERS': {
+        'user_create': 'users.serializers.UserCreateSerializer',
+        'user': 'users.serializers.UserSerializer',
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
+    },
+    'EMAIL': {
+        'activation': 'djoser.email.ActivationEmail',
+        'password_reset': 'djoser.email.PasswordResetEmail',
+    },
+}
 # --- Channels / Redis ---
 CHANNEL_LAYERS = {
     "default": {
@@ -197,9 +211,8 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Mbogiwood",
     "welcome_sign": "Welcome to the Mbogiwood Productions Admin Panel",
     "copyright": "Mbogiwood Productions PLC",
-    "custom_css": "css/jazzmin_theme.css"
+    "custom_css": "css/jazzmin_theme.css",
 }
-
 JAZZMIN_UI_TWEAKS = {
     "theme": "darkly",
     "dark_mode_theme": "darkly",
@@ -213,24 +226,18 @@ JAZZMIN_UI_TWEAKS = {
 # --- Celery ---
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Africa/Nairobi'
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Africa/Nairobi"
 
-__all__ = ('celery_app',)
+__all__ = ("celery_app",)
 
-# SENDGRID EMAIL CONFIGURATION
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_HOST_USER = 'apikey' # This is the literal string 'apikey'
-EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
+# --- Email / SendGrid ---
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_HOST_USER = "apikey"  # literal string "apikey"
+EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'admin@mbogiwood.co.ke' # Make sure this sender is verified in SendGrid
-
-# --- Security Notes ---
-# - Ensure DEBUG=False in production
-# - Set DJANGO_SECRET_KEY in environment
-# - Configure ALLOWED_HOSTS with your domains
-# - Use secure Redis/Postgres in production
+DEFAULT_FROM_EMAIL = "admin@mbogiwood.co.ke"  # must be verified in SendGrid
