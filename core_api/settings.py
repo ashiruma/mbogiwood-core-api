@@ -229,7 +229,7 @@ EMAIL_HOST_USER = 'apikey' # This is the literal string 'apikey'
 EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'your-verified-email@mbogiwood.co.ke' # Make sure this sender is verified in SendGrid
+DEFAULT_FROM_EMAIL = 'admin@mbogiwood.co.ke' # Make sure this sender is verified in SendGrid
 
 # --- Security Notes ---
 # - Ensure DEBUG=False in production
