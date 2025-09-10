@@ -14,7 +14,7 @@ def send_welcome_email(sender, instance, created, **kwargs):
     if created:
         send_mail(
             'Welcome to Mbogiwood Productions!',
-            f'Hi {instance.first_name},\n\nThank you for joining our community. We are excited to have you on board.',
+            f'Hi {instance.full_name},\n\nThank you for joining the Mbogi. We are excited to have you on board.',
             settings.EMAIL_HOST_USER,
             [instance.email],
             fail_silently=False,
